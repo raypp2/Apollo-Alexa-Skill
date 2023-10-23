@@ -1,0 +1,22 @@
+{
+  "directive": {
+    "header": {
+      "messageId": "123456",
+      "namespace": "Alexa.Speaker",
+      "name": "SetVolume",
+      "payloadVersion": "3",
+      "correlationToken": "ABCDEF"
+    },
+    "endpoint": {
+      "scope": {
+        "type": "BearerToken",
+        "token": "ABCDEF"
+      },
+      "endpointId": "anthem",
+      "cookie": {}
+    },
+    "payload": {
+      "volume": 50
+    }
+  }
+}

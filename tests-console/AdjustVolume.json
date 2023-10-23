@@ -1,0 +1,23 @@
+{
+  "directive": {
+    "header": {
+      "namespace": "Alexa.Speaker",
+      "name": "AdjustVolume",
+      "messageId": "Unique version 4 UUID",
+      "correlationToken": "Opaque correlation token",
+      "payloadVersion": "3"
+    },
+    "endpoint": {
+      "scope": {
+        "type": "BearerToken",
+        "token": "OAuth2.0 bearer token"
+      },
+      "endpointId": "anthem",
+      "cookie": {}
+    },
+    "payload": {
+      "volume": -9,
+      "volumeDefault": false
+    }
+  }
+}

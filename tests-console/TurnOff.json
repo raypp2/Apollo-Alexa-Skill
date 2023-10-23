@@ -1,0 +1,20 @@
+{
+  "directive": {
+    "header": {
+      "namespace": "Alexa.PowerController",
+      "name": "TurnOff",
+      "messageId": "Unique version 4 UUID ray",
+      "correlationToken": "Opaque correlation token ray",
+      "payloadVersion": "3"
+    },
+    "endpoint": {
+      "scope": {
+        "type": "BearerToken",
+        "token": "OAuth2.0 bearer token"
+      },
+      "endpointId": "kitchen",
+      "cookie": {}
+    },
+    "payload": {}
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "directive": {
+    "header": {
+      "messageId": "1234567890",
+      "namespace": "Alexa.ThermostatController",
+      "name": "SetThermostatMode",
+      "payloadVersion": "3.2",
+      "correlationToken": "abcdefg1234567"
+    },
+    "endpoint": {
+      "scope": {
+        "type": "BearerToken",
+        "token": "123456"
+      },
+      "endpointId": "livingRoomAC",
+      "cookie": {}
+    },
+    "payload": {
+      "thermostatMode": {
+        "value": "ECO"
+      }
+    }
+  }
+}

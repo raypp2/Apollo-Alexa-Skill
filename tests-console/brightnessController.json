@@ -1,0 +1,22 @@
+{
+  "directive": {
+    "header": {
+      "messageId": "12345",
+      "namespace": "Alexa.BrightnessController",
+      "name": "SetBrightness",
+      "payloadVersion": "3",
+      "correlationToken": "ABCDEFGHIGKLMNOPQRSTUVWXYZABCD1234567890"
+    },
+    "endpoint": {
+      "scope": {
+        "type": "BearerToken",
+        "token": "ABCDEFGHIGKLMNOPQRSTUVWXYZABCDEFGHIJK"
+      },
+      "endpointId": "kitchen",
+      "cookie": {}
+    },
+    "payload": {
+      "brightness": 80
+    }
+  }
+}

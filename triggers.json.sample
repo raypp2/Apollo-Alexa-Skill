@@ -1,0 +1,277 @@
+[
+    {
+        "endpointId": "kitchen",
+        "friendlyName": "Kitchen",
+        "displayCategories": ["LIGHT"],
+        "deviceAPI": "light",
+        "param": "kitchen",
+        "isDimmable": true
+    },
+    {
+        "endpointId": "dining_room",
+        "friendlyName": "Dining Room",
+        "displayCategories": ["LIGHT"],
+        "deviceAPI": "light",
+        "param": "dining-room",
+        "isDimmable": true
+    },
+    {
+        "endpointId": "giant_p",
+        "friendlyName": "Giant P",
+        "displayCategories": ["LIGHT"],
+        "deviceAPI": "light",
+        "param": "giant-p",
+        "isDimmable": true
+    },
+    {
+        "endpointId": "big_p",
+        "friendlyName": "Big P",
+        "displayCategories": ["LIGHT"],
+        "deviceAPI": "light",
+        "param": "giant-p",
+        "isDimmable": true
+    },
+    {
+        "endpointId": "living_room_bookshelf",
+        "friendlyName": "Living Room Bookshelf",
+        "displayCategories": ["LIGHT"],
+        "deviceAPI": "light",
+        "param": "living-room-bookshelf",
+        "isDimmable": true
+    },
+    {
+        "endpointId": "living_room_bookcase",
+        "friendlyName": "Living Room Bookcase",
+        "displayCategories": ["LIGHT"],
+        "deviceAPI": "light",
+        "param": "living-room-bookshelf",
+        "isDimmable": true
+    },
+    {
+        "endpointId": "living_room_wall",
+        "friendlyName": "Living Room Couch",
+        "displayCategories": ["LIGHT"],
+        "deviceAPI": "light",
+        "param": "living-room-wall",
+        "isDimmable": true
+    },
+    {
+        "endpointId": "office_wall",
+        "friendlyName": "Office Desk",
+        "displayCategories": ["LIGHT"],
+        "deviceAPI": "light",
+        "param": "office-wall",
+        "isDimmable": true
+    },
+    {
+        "endpointId": "office_right",
+        "friendlyName": "Office Wall",
+        "displayCategories": ["LIGHT"],
+        "deviceAPI": "light",
+        "param": "office-right",
+        "isDimmable": true
+    },
+    {
+        "endpointId": "hall",
+        "friendlyName": "Hall",
+        "displayCategories": ["LIGHT"],
+        "deviceAPI": "light",
+        "param": "hall",
+        "isDimmable": true
+    },
+    {
+        "endpointId": "hallway",
+        "friendlyName": "Hallway",
+        "displayCategories": ["LIGHT"],
+        "deviceAPI": "light",
+        "param": "hall",
+        "isDimmable": true
+    },    {
+        "endpointId": "wolf",
+        "friendlyName": "Wolf",
+        "displayCategories": ["SCENE_TRIGGER"],
+        "deviceAPI": "dmx_scene",
+        "param": "Wolf"
+    },
+    {
+        "endpointId": "ceiling",
+        "friendlyName": "Ceiling",
+        "displayCategories": ["SCENE_TRIGGER"],
+        "deviceAPI": "dmx_fixture",
+        "param": "adj"
+    },
+    {
+        "endpointId": "Bedroom",
+        "friendlyName": "Bedroom",
+        "displayCategories": ["LIGHT"],
+        "deviceAPI": "light",
+        "param": "bedroom",
+        "isDimmable": true
+    },
+    {
+        "endpointId": "bedroom-color",
+        "friendlyName": "Bedroom Color",
+        "displayCategories": ["LIGHT"],
+        "deviceAPI": "light",
+        "param": "bedroom-color",
+        "isDimmable": true
+    },
+    {
+        "endpointId": "living_room",
+        "friendlyName": "Living Room",
+        "displayCategories": ["SCENE_TRIGGER"],
+        "deviceAPI": "scene",
+        "param": "living-room",
+        "isDimmable": true
+    },
+    {
+        "endpointId": "hangout",
+        "friendlyName": "Hangout",
+        "displayCategories": ["SCENE_TRIGGER"],
+        "deviceAPI": "scene",
+        "param": "hangout-mode"
+    },
+    {
+        "endpointId": "hangout_mode",
+        "friendlyName": "Hangout Mode",
+        "displayCategories": ["SCENE_TRIGGER"],
+        "deviceAPI": "scene",
+        "param": "hangout-mode"
+    },
+    {
+        "endpointId": "all_lights",
+        "friendlyName": "All Lights",
+        "displayCategories": ["SCENE_TRIGGER"],
+        "deviceAPI": "scene",
+        "param": "all-lights"
+    },
+    {
+        "endpointId": "office",
+        "friendlyName": "Office",
+        "displayCategories": ["SCENE_TRIGGER"],
+        "deviceAPI": "scene",
+        "param": "office"
+    },
+    {
+        "endpointId": "movie_mode",
+        "friendlyName": "Movie Mode",
+        "displayCategories": ["ACTIVITY_TRIGGER"],
+        "deviceAPI": "movie_mode"
+    },
+    {
+        "endpointId": "bedtime",
+        "friendlyName": "Bed Time",
+        "displayCategories": ["ACTIVITY_TRIGGER"],
+        "deviceAPI": "bedtime_macro"
+    },
+    {
+        "endpointId": "away",
+        "friendlyName": "Away",
+        "displayCategories": ["ACTIVITY_TRIGGER"],
+        "deviceAPI": "away_macro"
+    },
+    {
+        "endpointId": "apple_tv",
+        "friendlyName": "Apple TV",
+        "displayCategories": ["STREAMING_DEVICE"],
+        "deviceAPI": "apple_tv"
+    },
+    {
+        "endpointId": "apollo",
+        "friendlyName": "Apollo",
+        "displayCategories": ["STREAMING_DEVICE"],
+        "deviceAPI": "apollo"
+    },
+    {
+        "endpointId": "bedroom_projector",
+        "friendlyName": "Bedroom Projector",
+        "displayCategories": ["TV"],
+        "deviceAPI": "bedroom_projector"
+    },
+    {
+        "endpointId": "bedroom_projector_sleep",
+        "friendlyName": "Manual",
+        "displayCategories": ["TV"],
+        "deviceAPI": "dmx_scene",
+        "param": "Manual"
+    },
+    {
+        "endpointId": "theater_projector",
+        "friendlyName": "Theater Projector",
+        "displayCategories": ["TV"],
+        "deviceAPI": "theater_projector"
+    },
+    {
+        "endpointId": "chrome_cast",
+        "friendlyName": "Chromecast",
+        "displayCategories": ["STREAMING_DEVICE"],
+        "deviceAPI": "chrome_cast"
+    },
+    {
+        "endpointId": "doorXXX",
+        "friendlyName": "XXXX Door",
+        "displayCategories": ["SMARTLOCK"],
+        "deviceAPI": "door/XXXXXX",
+        "isLock": true
+    },
+    {
+        "endpointId": "Playstation",
+        "friendlyName": "Playstation",
+        "displayCategories": ["GAME_CONSOLE"],
+        "deviceAPI": "rays_playstation"
+    },
+    {
+        "endpointId": "ray_music",
+        "friendlyName": "Ray's Music",
+        "displayCategories": ["MUSIC_SYSTEM"],
+        "deviceAPI": "rays_music"
+    },
+    {
+        "endpointId": "anthem",
+        "friendlyName": "Anthem",
+        "displayCategories": ["MUSIC_SYSTEM"],
+        "deviceAPI": "speakers/anthem",
+        "isSpeaker":true
+    },
+    {
+        "endpointId": "living_room_AC",
+        "friendlyName": "Air Conditioner",
+        "displayCategories": ["THERMOSTAT"],
+        "deviceAPI": "ac/living_room_AC",
+        "isAC":true
+    },
+    {
+        "endpointId": "blackout-shade-one",
+        "friendlyName": "Blackout Shade One",
+        "displayCategories": ["EXTERIOR_BLIND"],
+        "deviceAPI": "shades",
+        "param": "one"
+    },
+    {
+        "endpointId": "blackout-shade-two",
+        "friendlyName": "Blackout Shade Two",
+        "displayCategories": ["EXTERIOR_BLIND"],
+        "deviceAPI": "shades",
+        "param": "two"
+    },
+    {
+        "endpointId": "blackout-shade-three",
+        "friendlyName": "Blackout Shade Three",
+        "displayCategories": ["EXTERIOR_BLIND"],
+        "deviceAPI": "shades",
+        "param": "three"
+    },
+    {
+        "endpointId": "blackout-shades-all",
+        "friendlyName": "Blackout Shades",
+        "displayCategories": ["EXTERIOR_BLIND"],
+        "deviceAPI": "shades",
+        "param": "all"
+    },
+    {
+        "endpointId": "find_my_iphone",
+        "friendlyName": "Find My iPhone",
+        "displayCategories": ["PHONE"],
+        "deviceAPI": "find_my_iphone"
+    }
+]

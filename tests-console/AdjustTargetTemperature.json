@@ -1,0 +1,25 @@
+{
+  "directive": {
+    "header": {
+      "messageId": "1234",
+      "namespace": "Alexa.ThermostatController",
+      "name": "AdjustTargetTemperature",
+      "payloadVersion": "3.2",
+      "correlationToken": "ABCDEFGHIGKLMNOPQRSTUVWXYZABCD1234567890"
+    },
+    "endpoint": {
+      "scope": {
+        "type": "BearerToken",
+        "token": "ABCDEFGHIGKLMNOPQRSTUVWXYZABCDEFGHIJK"
+      },
+      "endpointId": "living_room_AC",
+      "cookie": {}
+    },
+    "payload": {
+      "targetSetpointDelta": {
+        "value": 6,
+        "scale": "FAHRENHEIT"
+      }
+    }
+  }
+}

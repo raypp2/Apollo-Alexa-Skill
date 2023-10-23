@@ -1,0 +1,16 @@
+# Environment variables
+.env
+
+# Config files
+triggers.json
+
+# Folder for notes not for sharing
+private
+
+# Old versions
+_OLD
+_OLD/*
+
+# OS Files
+.DS_Store
+.vscode/*
