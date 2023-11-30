@@ -209,7 +209,7 @@ async function handleSpeaker(event, context) {
 
 async function handlePowerOrLight(event, context) {
     //TODO Confirm if it's needed to perform another error checking here
-    if (event.directive.header.namespace === 'Alexa.PowerController' || event.directive.header.namespace === 'Alexa.BrightnessController') {
+    if (event.directive.header.namespace === 'Alexa.PowerController' || event.directive.header.namespace === 'Alexa.BrightnessController' || event.directive.header.namespace === 'Alexa.PercentageController') {
 
         // Breakdown Alexa directive and prepare response
 
@@ -252,6 +252,17 @@ async function handlePowerOrLight(event, context) {
                     uncertaintyInMilliseconds: 500
                 });
                 break;
+            case "SetPercentage":
+                percentageState = event.directive.payload.percentage;
+                nameResponse = "Percentage";
+                contextProperties.push({
+                    namespace: 'Alexa.PercentageController',
+                    name: 'percentage',
+                    value: percentageState,
+                    timeOfSample: new Date().toISOString(),
+                    uncertaintyInMilliseconds: 500
+                });
+                break;
             default:
                 throw new Error("Unsupported directive");
         }
@@ -268,10 +279,8 @@ async function handlePowerOrLight(event, context) {
         const apiModule = trigger.apiModule;
         const apiDevice = trigger.apiDevice;
 
-
-        // const deviceId = trigger.apiDevice || false;
-
         let apiCommand = `/${apiModule}/${apiDevice}`;
+        if (trigger.apiCommand) { apiCommand += `/${trigger.apiCommand}` }
         if (devCommand) { apiCommand += `/${devCommand}` }
         if (percentageState) { apiCommand += `/${percentageState}` }
 

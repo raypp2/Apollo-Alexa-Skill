@@ -42,6 +42,19 @@ function handleDiscovery(accessToken, context) {
                 });
             }
 
+            if (trigger.isPercentageController) {
+                capabilities.push({
+                    type: 'AlexaInterface',
+                    interface: 'Alexa.PercentageController',
+                    version: '3',
+                    properties: {
+                        supported: [{ name: 'percentage' }],
+                        proactivelyReported: false,
+                        retrievable: false
+                    }
+                });
+            }
+
             if (trigger.isLock) {
                 capabilities.push({
                     type: 'AlexaInterface',

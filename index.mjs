@@ -36,6 +36,10 @@ export const handler = async function (request, context) {
         console.log("DEBUG: " + "Brightness Request " + JSON.stringify(request));
         return await handlePowerOrLight(request, context); 
     }
+    else if (request.directive.header.namespace === 'Alexa.PercentageController') {
+        console.log("DEBUG: " + "Percentage Request " + JSON.stringify(request));
+        return await handlePowerOrLight(request, context); 
+    }
     else if (request.directive.header.namespace === 'Alexa.Speaker') {
         console.log("DEBUG: " + "Speaker Request " + JSON.stringify(request));
         return await handleSpeaker(request, context);    
