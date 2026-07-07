@@ -1,5 +1,6 @@
 import { handleDiscovery } from './handleDiscovery.mjs';
 import { handleAC, handleLock, handleSpeaker, handlePowerOrLight } from './handleDevices.mjs';
+import { handleReportState } from './handleReportState.mjs';
 
 
 // Get triggers config from S3
@@ -54,6 +55,10 @@ export const handler = async function (request, context) {
     }
     else if (request.directive.header.namespace === 'Alexa.Authorization' && request.directive.header.name === 'AcceptGrant') {
         return handleAuthorization(request, context);
+    }
+    else if (request.directive.header.namespace === 'Alexa' && request.directive.header.name === 'ReportState') {
+        console.log("DEBUG: " + "ReportState Request " + JSON.stringify(request));
+        return await handleReportState(request, context);
     }
 
 };

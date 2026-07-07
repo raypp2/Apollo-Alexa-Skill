@@ -1,0 +1,16 @@
+{
+  "name": "apollo-alexa-skill",
+  "version": "1.0.0",
+  "description": "AWS Lambda that bridges Alexa Smart Home directives to the Apollo Home Control application.",
+  "type": "module",
+  "main": "index.mjs",
+  "scripts": {
+    "test": "node --test test/**/*.test.js"
+  },
+  "license": "SEE LICENSE IN LICENSE",
+  "dependencies": {
+    "@aws-sdk/client-iot-data-plane": "^3.1081.0",
+    "@aws-sdk/client-s3": "^3.1081.0",
+    "@aws-sdk/client-sqs": "^3.1081.0"
+  }
+}
