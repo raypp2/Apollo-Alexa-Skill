@@ -1,6 +1,7 @@
 import { handleDiscovery } from './handleDiscovery.mjs';
 import { handleAC, handleLock, handleSpeaker, handlePowerOrLight } from './handleDevices.mjs';
 import { handleReportState } from './handleReportState.mjs';
+import { handleAcceptGrant } from './handleAcceptGrant.mjs';
 
 
 // Get triggers config from S3
@@ -21,7 +22,7 @@ export { triggers, triggersMap };
 
 
 export const handler = async function (request, context) {
-    
+
     if (request.directive.header.namespace === 'Alexa.Discovery' && request.directive.header.name === 'Discover') {
         console.log("DEBUG: " + "Discover request " + JSON.stringify(request));
         return await handleDiscovery(request, context);
@@ -54,7 +55,8 @@ export const handler = async function (request, context) {
         return await handleLock(request, context);
     }
     else if (request.directive.header.namespace === 'Alexa.Authorization' && request.directive.header.name === 'AcceptGrant') {
-        return handleAuthorization(request, context);
+        console.log("DEBUG: " + "AcceptGrant Request " + JSON.stringify(request));
+        return await handleAcceptGrant(request, context);
     }
     else if (request.directive.header.namespace === 'Alexa' && request.directive.header.name === 'ReportState') {
         console.log("DEBUG: " + "ReportState Request " + JSON.stringify(request));
@@ -62,13 +64,3 @@ export const handler = async function (request, context) {
     }
 
 };
-
-
-function handleAuthorization(request, context) {
-    // Send the AcceptGrant response
-    var payload = {};
-    var header = request.directive.header;
-    header.name = "AcceptGrant.Response";
-    console.log("DEBUG" + "AcceptGrant Response: " + JSON.stringify({ header: header, payload: payload }));
-    context.succeed({ event: { header: header, payload: payload } });
-}
