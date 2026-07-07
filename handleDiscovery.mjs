@@ -19,6 +19,15 @@ import { triggers, triggersMap } from './index.mjs';
 // not emit today, so it is inert until a future device type deliberately sets it.
 const STATEFUL_FLAG = 'statefulMqtt';
 
+// Flip to true when the ChangeReport leg of Stage 7 ships (LWA account linking +
+// the shadow-triggered ChangeReport Lambda). Until then we must NOT declare
+// proactivelyReported: Alexa takes that flag as "this skill pushes ChangeReports"
+// and polls ReportState LESS aggressively for such endpoints -- claiming it before
+// change reports exist would make Alexa-app state STALER, undermining the exact
+// feature retrievable/ReportState adds. Requires a device re-discovery after
+// flipping ("Alexa, discover devices").
+const CHANGE_REPORTS_ENABLED = false;
+
 /**
  * Whether Apollo publishes a live, shadow-backed canonical state for this endpoint.
  * Today that's exactly: LIGHTS (every ecosystem driver publishes `power` on every
@@ -79,7 +88,7 @@ function handleDiscovery(accessToken, context, triggersList = triggers) {
                         version: '3',
                         properties: {
                             supported: [{ name: 'powerState' }],
-                            proactivelyReported: powerRetrievable,
+                            proactivelyReported: powerRetrievable && CHANGE_REPORTS_ENABLED,
                             retrievable: powerRetrievable
                         }
                 });
@@ -92,7 +101,7 @@ function handleDiscovery(accessToken, context, triggersList = triggers) {
                     version: '3',
                     properties: {
                         supported: [{ name: 'brightness' }],
-                        proactivelyReported: stateful,
+                        proactivelyReported: stateful && CHANGE_REPORTS_ENABLED,
                         retrievable: stateful
                     }
                 });
@@ -105,7 +114,7 @@ function handleDiscovery(accessToken, context, triggersList = triggers) {
                     version: '3',
                     properties: {
                         supported: [{ name: 'percentage' }],
-                        proactivelyReported: stateful,
+                        proactivelyReported: stateful && CHANGE_REPORTS_ENABLED,
                         retrievable: stateful
                     }
                 });
@@ -166,7 +175,7 @@ function handleDiscovery(accessToken, context, triggersList = triggers) {
                     version: '3',
                     properties: {
                         supported: [{ name: 'connectivity' }],
-                        proactivelyReported: true,
+                        proactivelyReported: CHANGE_REPORTS_ENABLED,
                         retrievable: true
                     }
                 });
