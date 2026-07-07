@@ -5,19 +5,6 @@ import { triggers, triggersMap } from './index.mjs';
 // interface. See isStatefulTrigger() below for exactly which endpoints qualify, and
 // handleReportState.mjs for the code that actually answers ReportState directives for
 // them.
-//
-// NOTE on the `mqttName` field: apollo-home-control's src/alexaTriggers.js stamps
-// "mqttName": entry.mqttName || entry.id onto EVERY trigger it writes -- lights, shades,
-// scenes, macros, deviceScenes, locks, speakers, AC, all of it (verified against the live
-// config/triggers.json on 2026-07-07: 58/58 entries carry a non-empty mqttName). So
-// "trigger has a truthy mqttName" is not a usable signal for "this endpoint has a real
-// MQTT-backed shadow" -- it's true for stateless SCENE_TRIGGER/ACTIVITY_TRIGGER endpoints
-// too, and using it as-is would wrongly mark those endpoints retrievable. Apollo only
-// actually publishes canonical MQTT state (see src/mqttTopics.js publishState() callers)
-// for LIGHTS entries and the shades DEVICES entry -- nothing else has a shadow to read.
-// `STATEFUL_FLAG` below is a placeholder future opt-in field that alexaTriggers.js does
-// not emit today, so it is inert until a future device type deliberately sets it.
-const STATEFUL_FLAG = 'statefulMqtt';
 
 // Flip to true when the ChangeReport leg of Stage 7 ships (LWA account linking +
 // the shadow-triggered ChangeReport Lambda). Until then we must NOT declare
@@ -30,21 +17,20 @@ const CHANGE_REPORTS_ENABLED = false;
 
 /**
  * Whether Apollo publishes a live, shadow-backed canonical state for this endpoint.
- * Today that's exactly: LIGHTS (every ecosystem driver publishes `power` on every
- * change -- see src/lightingInsteon.js, lightingPhilipsHue.js, lightingShelly.js) and the
- * shades DEVICES entry (isPercentageController: true, publishes `position`).
- * Scenes/macros/deviceScenes and every other DEVICES entry (locks, AC, speakers, the
- * projectors, Find My, etc.) fire a one-shot command and have no ongoing device state to
- * report, so they are intentionally excluded and keep today's discovery behavior exactly.
+ *
+ * Trusts the `statefulMqtt` flag stamped into triggers.json by apollo-home-control's
+ * src/alexaTriggers.js, which computes it from the same isAlexaStateful(entry) helper
+ * that gates apollo-home-control's src/mqttTopics.js shadow-envelope publishing (entry has
+ * an `alexa` config block AND is one of the ecosystems that actually publishes MQTT state:
+ * insteon, hue-group, shelly, Somfy-Bridge). That's a single source of truth on the Apollo
+ * side, so this skill no longer needs its own apiModule/isPercentageController heuristics
+ * to infer statefulness -- Apollo tells us directly, on the first (index 0) trigger only
+ * (alias endpoints like "shades-2" are intentionally left unstamped and stay stateless).
  * @param {object} trigger - a triggers.json entry
  * @returns {boolean}
  */
 function isStatefulTrigger(trigger) {
-    return !!trigger && (
-        trigger.apiModule === 'LIGHTS' ||
-        trigger.isPercentageController === true ||
-        trigger[STATEFUL_FLAG] === true
-    );
+    return trigger?.statefulMqtt === true;
 }
 
 /**
