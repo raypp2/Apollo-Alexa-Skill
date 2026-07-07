@@ -13,7 +13,8 @@ const DIMMABLE_LIGHT = {
     apiDevice: 'kitchen',
     isDimmable: true,
     location: 'home',
-    mqttName: 'kitchen'
+    mqttName: 'kitchen',
+    statefulMqtt: true
 };
 
 const NON_DIMMABLE_LIGHT = {
@@ -24,7 +25,8 @@ const NON_DIMMABLE_LIGHT = {
     apiDevice: 'hall',
     isDimmable: false,
     location: 'home',
-    mqttName: 'hall'
+    mqttName: 'hall',
+    statefulMqtt: true
 };
 
 const SHADES = {
@@ -35,7 +37,22 @@ const SHADES = {
     apiDevice: 'shades',
     isPercentageController: true,
     location: 'home',
-    mqttName: 'shades'
+    mqttName: 'shades',
+    statefulMqtt: true
+};
+
+// A LIGHTS trigger apollo-home-control did NOT stamp statefulMqtt on (e.g. a DMX light --
+// see handleDiscovery.mjs's isStatefulTrigger() doc comment). ReportState must refuse to
+// read a shadow for it.
+const UNSTATEFUL_LIGHT = {
+    endpointId: 'ceiling',
+    friendlyName: 'Ceiling',
+    displayCategories: ['LIGHT'],
+    apiModule: 'LIGHTS',
+    apiDevice: 'ceiling',
+    isDimmable: true,
+    location: 'home',
+    mqttName: 'ceiling'
 };
 
 const SCENE = {
@@ -226,6 +243,16 @@ test('non-stateful endpoint (scene) returns ErrorResponse INVALID_DIRECTIVE rath
     const getShadow = async () => { throw new Error('should not be called'); };
 
     const response = await handleReportState(reportStateDirective('all_lights'), {}, { getShadow, triggers });
+
+    assert.equal(response.event.header.name, 'ErrorResponse');
+    assert.equal(response.event.payload.type, 'INVALID_DIRECTIVE');
+});
+
+test('LIGHTS trigger WITHOUT statefulMqtt (e.g. a DMX light) returns ErrorResponse INVALID_DIRECTIVE rather than reading a shadow', async () => {
+    const triggers = triggersMapWith(UNSTATEFUL_LIGHT);
+    const getShadow = async () => { throw new Error('should not be called'); };
+
+    const response = await handleReportState(reportStateDirective('ceiling'), {}, { getShadow, triggers });
 
     assert.equal(response.event.header.name, 'ErrorResponse');
     assert.equal(response.event.payload.type, 'INVALID_DIRECTIVE');

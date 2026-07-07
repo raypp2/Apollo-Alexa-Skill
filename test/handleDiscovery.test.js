@@ -14,7 +14,23 @@ const LIGHT = {
     apiDevice: 'kitchen',
     isDimmable: true,
     location: 'home',
-    mqttName: 'kitchen'
+    mqttName: 'kitchen',
+    statefulMqtt: true
+};
+
+// A LIGHTS trigger apollo-home-control did NOT stamp statefulMqtt on -- e.g. a DMX light,
+// whose ecosystem doesn't publish MQTT state yet (see mqttTopics.js's ALEXA_STATEFUL_TYPES
+// on the Apollo side). Shaped just like LIGHT except for the missing flag, to isolate what
+// the flag alone controls.
+const UNSTATEFUL_LIGHT = {
+    endpointId: 'ceiling',
+    friendlyName: 'Ceiling',
+    displayCategories: ['LIGHT'],
+    apiModule: 'LIGHTS',
+    apiDevice: 'ceiling',
+    isDimmable: true,
+    location: 'home',
+    mqttName: 'ceiling'
 };
 
 const SCENE = {
@@ -50,10 +66,11 @@ const SHADES = {
     isSpeaker: false,
     isPercentageController: true,
     location: 'home',
-    mqttName: 'shades'
+    mqttName: 'shades',
+    statefulMqtt: true
 };
 
-const FIXTURE_TRIGGERS = [LIGHT, SCENE, MACRO, SHADES];
+const FIXTURE_TRIGGERS = [LIGHT, SCENE, MACRO, SHADES, UNSTATEFUL_LIGHT];
 
 function endpointFor(response, endpointId) {
     return response.event.payload.endpoints.find((e) => e.endpointId === endpointId);
@@ -63,11 +80,18 @@ function capabilityFor(endpoint, iface) {
     return endpoint.capabilities.find((c) => c.interface === iface);
 }
 
-test('isStatefulTrigger: LIGHTS and percentageController are stateful, scenes/macros are not', () => {
+test('isStatefulTrigger: trusts the statefulMqtt flag exactly -- true only when it is === true', () => {
     assert.equal(isStatefulTrigger(LIGHT), true);
     assert.equal(isStatefulTrigger(SHADES), true);
     assert.equal(isStatefulTrigger(SCENE), false);
     assert.equal(isStatefulTrigger(MACRO), false);
+    // A LIGHTS trigger without the flag (e.g. a DMX light -- Apollo doesn't stamp
+    // statefulMqtt on ecosystems that don't publish MQTT state) must NOT be treated as
+    // stateful just because apiModule === 'LIGHTS'.
+    assert.equal(isStatefulTrigger(UNSTATEFUL_LIGHT), false);
+    assert.equal(isStatefulTrigger(undefined), false);
+    assert.equal(isStatefulTrigger(null), false);
+    assert.equal(isStatefulTrigger({ statefulMqtt: 'true' }), false, 'must be === true, not truthy');
 });
 
 test('reportsPower: only LIGHTS entries report a power field', () => {
@@ -138,6 +162,22 @@ test('shades: PercentageController retrievable + EndpointHealth present, but Pow
 
     const health = capabilityFor(endpoint, 'Alexa.EndpointHealth');
     assert.ok(health, 'expected Alexa.EndpointHealth interface to be present');
+});
+
+test('LIGHTS trigger WITHOUT statefulMqtt (e.g. a DMX light) gets no retrievable properties and no EndpointHealth', () => {
+    const response = handleDiscovery(null, {}, FIXTURE_TRIGGERS);
+    const endpoint = endpointFor(response, 'ceiling');
+
+    const power = capabilityFor(endpoint, 'Alexa.PowerController');
+    assert.equal(power.properties.retrievable, false);
+    assert.equal(power.properties.proactivelyReported, false);
+
+    const brightness = capabilityFor(endpoint, 'Alexa.BrightnessController');
+    assert.equal(brightness.properties.retrievable, false);
+    assert.equal(brightness.properties.proactivelyReported, false);
+
+    const health = capabilityFor(endpoint, 'Alexa.EndpointHealth');
+    assert.equal(health, undefined, 'EndpointHealth should only be added for stateful endpoints');
 });
 
 test('discovery response shape is otherwise unchanged (header/payload envelope)', () => {
