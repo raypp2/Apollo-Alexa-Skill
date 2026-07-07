@@ -1,0 +1,245 @@
+import { triggersMap as liveTriggersMap } from './index.mjs';
+import { isStatefulTrigger } from './handleDiscovery.mjs';
+
+// How old (in seconds) a shadow's `timestamp` can be before we consider it stale and
+// report Alexa.EndpointHealth as UNREACHABLE even though `reachable` itself said true.
+// Matches the "timestamp older than 24h" staleness window called out in the Stage 7 spec.
+const STALE_SECONDS = 24 * 60 * 60;
+
+// Cap on uncertaintyInMilliseconds. There's no hard spec ceiling for this value; capping
+// it at the same 24h staleness window keeps it bounded and ties it to a concept the rest
+// of this file already reasons about, rather than introducing a second unrelated constant.
+const MAX_UNCERTAINTY_MS = STALE_SECONDS * 1000;
+
+let cachedClient = null;
+
+/**
+ * Lazily builds (and caches) the IoT data-plane client. Not called at module load time --
+ * only when the real (non-injected) getShadow path actually runs -- so importing this
+ * module, or running it against an injected fake getShadow (as the tests do), never
+ * requires IOT_DATA_ENDPOINT to be set or the AWS SDK to make a network call.
+ */
+async function getIotDataClient() {
+    if (!process.env.IOT_DATA_ENDPOINT) {
+        throw new Error(
+            "IOT_DATA_ENDPOINT environment variable is not set. Set it to this AWS account's " +
+            'IoT data-plane endpoint (Lambda console -> Configuration -> Environment variables; ' +
+            'find the value with `aws iot describe-endpoint --endpoint-type iot:Data-ATS`), e.g. ' +
+            '"xxxxxxxxxxxxxx-ats.iot.us-east-1.amazonaws.com". ReportState cannot read device ' +
+            'shadows without it.'
+        );
+    }
+    if (!cachedClient) {
+        const { IoTDataPlaneClient } = await import('@aws-sdk/client-iot-data-plane');
+        cachedClient = new IoTDataPlaneClient({
+            region: process.env.sqsRegion || 'us-east-1',
+            endpoint: `https://${process.env.IOT_DATA_ENDPOINT}`
+        });
+    }
+    return cachedClient;
+}
+
+/**
+ * Reads a Uint8Array/stream-ish SDK response body into a UTF-8 string, tolerant of the
+ * couple of shapes @aws-sdk/client-iot-data-plane's GetThingShadowCommand can return
+ * `payload` as depending on runtime (Node stream vs. plain Uint8Array).
+ * @param {*} body
+ * @returns {Promise<string>}
+ */
+async function bodyToString(body) {
+    if (body == null) {
+        return '';
+    }
+    if (typeof body.transformToString === 'function') {
+        return body.transformToString();
+    }
+    if (body instanceof Uint8Array) {
+        return Buffer.from(body).toString('utf8');
+    }
+    const chunks = [];
+    for await (const chunk of body) {
+        chunks.push(chunk);
+    }
+    return Buffer.concat(chunks).toString('utf8');
+}
+
+/**
+ * Production shadow getter: reads the classic shadow for IoT thing `apollo-<endpointId>`
+ * and returns the parsed shadow document (`{ state: { reported: {...} }, ... }`).
+ * Throws if the shadow doesn't exist (AWS SDK raises ResourceNotFoundException) or the
+ * request otherwise fails -- handleReportState treats any throw here as "shadow missing"
+ * and answers with an ErrorResponse.
+ * @param {string} endpointId
+ * @returns {Promise<object>}
+ */
+async function defaultGetShadow(endpointId) {
+    const client = await getIotDataClient();
+    const { GetThingShadowCommand } = await import('@aws-sdk/client-iot-data-plane');
+    const command = new GetThingShadowCommand({ thingName: `apollo-${endpointId}` });
+    const response = await client.send(command);
+    const raw = await bodyToString(response.payload);
+    return JSON.parse(raw);
+}
+
+/**
+ * Whether `reported` has the field(s) this trigger type needs to build a valid
+ * StateReport. Deliberately per-trigger-type rather than "has power AND position": the
+ * shades canonical MQTT state never carries a `power` field (src/somfyBridge.js only ever
+ * publishes `position`), so requiring `power` there would make every shades ReportState
+ * "malformed". See handleDiscovery.mjs's reportsPower() for the discovery-side twin of
+ * this same asymmetry.
+ * @param {object} trigger
+ * @param {object} reported
+ * @returns {boolean}
+ */
+function isValidReportedState(trigger, reported) {
+    if (!reported || typeof reported !== 'object') {
+        return false;
+    }
+    if (trigger.apiModule === 'LIGHTS') {
+        return reported.power === 'ON' || reported.power === 'OFF';
+    }
+    if (trigger.isPercentageController) {
+        return typeof reported.position === 'number' && reported.position >= 0 && reported.position <= 100;
+    }
+    // Any future STATEFUL_FLAG-only endpoint type has no known shape yet to validate --
+    // treat as malformed until this function is extended for it.
+    return false;
+}
+
+function buildErrorResponse(event, type, message) {
+    const directive = event.directive;
+    const endpointId = directive.endpoint && directive.endpoint.endpointId;
+    return {
+        event: {
+            header: {
+                namespace: 'Alexa',
+                name: 'ErrorResponse',
+                payloadVersion: '3',
+                messageId: directive.header.messageId,
+                correlationToken: directive.header.correlationToken
+            },
+            endpoint: endpointId ? { endpointId } : undefined,
+            payload: { type, message }
+        }
+    };
+}
+
+/**
+ * Handles `namespace: "Alexa", name: "ReportState"` directives by reading the endpoint's
+ * IoT classic shadow and mapping its canonical reported state onto Alexa context
+ * properties.
+ * @param {object} event - the Alexa directive event
+ * @param {object} context - the Lambda context (unused directly, kept for signature parity
+ *   with the other handle* functions)
+ * @param {object} [deps] - injection point for tests
+ * @param {function(string, object): Promise<object>} [deps.getShadow] - defaults to
+ *   defaultGetShadow; called as getShadow(endpointId, trigger)
+ * @param {Map<string, object>} [deps.triggers] - defaults to the live triggersMap from
+ *   index.mjs
+ * @returns {Promise<object>} StateReport or ErrorResponse event
+ */
+async function handleReportState(event, context, deps = {}) {
+    const getShadow = deps.getShadow || defaultGetShadow;
+    const triggers = deps.triggers || liveTriggersMap;
+
+    const endpointId = event.directive.endpoint.endpointId;
+    const trigger = triggers.get(endpointId);
+
+    if (!trigger) {
+        console.error('No matching trigger found for applianceId:', endpointId);
+        return buildErrorResponse(event, 'NO_SUCH_ENDPOINT', `No trigger configured for endpoint ${endpointId}`);
+    }
+
+    if (!isStatefulTrigger(trigger)) {
+        console.error('ReportState requested for a non-stateful endpoint:', endpointId);
+        return buildErrorResponse(event, 'INVALID_DIRECTIVE', `Endpoint ${endpointId} does not report state`);
+    }
+
+    let shadow;
+    try {
+        shadow = await getShadow(endpointId, trigger);
+    } catch (err) {
+        console.error('Shadow fetch failed for', endpointId, err);
+        return buildErrorResponse(event, 'ENDPOINT_UNREACHABLE', `No shadow found for endpoint ${endpointId}`);
+    }
+
+    const reported = shadow && shadow.state && shadow.state.reported;
+    if (!isValidReportedState(trigger, reported)) {
+        console.error('Malformed shadow for', endpointId, JSON.stringify(shadow));
+        return buildErrorResponse(event, 'INTERNAL_ERROR', `Malformed shadow document for endpoint ${endpointId}`);
+    }
+
+    const nowMs = Date.now();
+    const timestampSeconds = typeof reported.timestamp === 'number' ? reported.timestamp : null;
+    const isStale = timestampSeconds === null || (Math.floor(nowMs / 1000) - timestampSeconds) > STALE_SECONDS;
+    const isUnreachable = reported.reachable === false || isStale;
+
+    const timeOfSample = timestampSeconds !== null
+        ? new Date(timestampSeconds * 1000).toISOString()
+        : new Date(nowMs).toISOString();
+
+    const uncertaintyInMilliseconds = timestampSeconds !== null
+        ? Math.min(Math.max(nowMs - timestampSeconds * 1000, 0), MAX_UNCERTAINTY_MS)
+        : MAX_UNCERTAINTY_MS;
+
+    const properties = [];
+
+    if (reported.power !== undefined) {
+        properties.push({
+            namespace: 'Alexa.PowerController',
+            name: 'powerState',
+            value: reported.power === 'ON' ? 'ON' : 'OFF',
+            timeOfSample,
+            uncertaintyInMilliseconds
+        });
+    }
+
+    if (trigger.isDimmable && reported.brightness !== undefined) {
+        properties.push({
+            namespace: 'Alexa.BrightnessController',
+            name: 'brightness',
+            value: reported.brightness,
+            timeOfSample,
+            uncertaintyInMilliseconds
+        });
+    }
+
+    if (trigger.isPercentageController && reported.position !== undefined) {
+        properties.push({
+            namespace: 'Alexa.PercentageController',
+            name: 'percentage',
+            value: reported.position,
+            timeOfSample,
+            uncertaintyInMilliseconds
+        });
+    }
+
+    properties.push({
+        namespace: 'Alexa.EndpointHealth',
+        name: 'connectivity',
+        value: { value: isUnreachable ? 'UNREACHABLE' : 'OK' },
+        timeOfSample,
+        uncertaintyInMilliseconds
+    });
+
+    return {
+        context: { properties },
+        event: {
+            header: {
+                namespace: 'Alexa',
+                name: 'StateReport',
+                payloadVersion: '3',
+                messageId: event.directive.header.messageId,
+                correlationToken: event.directive.header.correlationToken
+            },
+            endpoint: {
+                endpointId,
+                scope: event.directive.endpoint.scope
+            },
+            payload: {}
+        }
+    };
+}
+
+export { handleReportState, defaultGetShadow, isValidReportedState };
