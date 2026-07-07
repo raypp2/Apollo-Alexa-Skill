@@ -48,3 +48,10 @@ The Alexa Smart Home API is bi-directional allowing both the push of commands an
    2) `sqsUrl` = Your SQS queue location (i.e. https://sqs.us-east-1.amazonaws.com/8888888888888/apollo)
 5) Test within the Lambda console. Samples are provided in tests-console folder of this repo. These are representative of the commands that are sent by the Alexa Skills API.
 6) Update the triggers.json file. The Apollo Home Control application auto-generates this based upon your configuration files.
+7) For `Alexa.ReportState` (Stage 7), set the `IOT_DATA_ENDPOINT` environment variable to this AWS account's IoT data-plane endpoint (`aws iot describe-endpoint --endpoint-type iot:Data-ATS`), e.g. `xxxxxxxxxxxxxx-ats.iot.us-east-1.amazonaws.com`. The Lambda's execution role also needs `iot:GetThingShadow` on the `apollo-*` things.
+
+## Local development / tests
+
+This repo now has a `package.json` (`npm test` runs `node --test`) so ReportState and Discovery logic can be unit tested with injected fakes instead of hitting AWS. `npm install` before running `npm test`.
+
+**Deploy note:** the repo previously shipped as bare `.mjs` files with no `package.json`, relying on whichever `@aws-sdk/client-*` packages the Lambda console's Node.js managed runtime happens to bundle. That's undocumented and AWS explicitly recommends against relying on it (see [aws-sdk-js-v3's Lambda guidance](https://github.com/aws/aws-sdk-js-v3/blob/main/supplemental-docs/AWS_LAMBDA.md)) — only bundle-your-own-SDK is guaranteed. `@aws-sdk/client-sqs`/`client-s3` have apparently been fine bundled so far, but `@aws-sdk/client-iot-data-plane` (added for ReportState) is not a commonly-bundled client and should not be assumed present. Having a `package.json` doesn't break a console/zip deploy of bare `.mjs` files by itself — but to safely use ReportState, zip `node_modules` (after `npm install`) together with the `.mjs` files and `package.json` rather than editing/uploading source only through the inline console editor.

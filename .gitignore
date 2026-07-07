@@ -1,6 +1,9 @@
 # Environment variables
 .env
 
+# Installed packages (see README for how the Lambda deploy zip is built)
+node_modules
+
 # Config files
 triggers.json
 
