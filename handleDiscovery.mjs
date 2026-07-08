@@ -6,14 +6,13 @@ import { triggers, triggersMap } from './index.mjs';
 // handleReportState.mjs for the code that actually answers ReportState directives for
 // them.
 
-// Flip to true when the ChangeReport leg of Stage 7 ships (LWA account linking +
-// the shadow-triggered ChangeReport Lambda). Until then we must NOT declare
-// proactivelyReported: Alexa takes that flag as "this skill pushes ChangeReports"
-// and polls ReportState LESS aggressively for such endpoints -- claiming it before
-// change reports exist would make Alexa-app state STALER, undermining the exact
-// feature retrievable/ReportState adds. Requires a device re-discovery after
-// flipping ("Alexa, discover devices").
-const CHANGE_REPORTS_ENABLED = false;
+// Flipped true 2026-07-07: the ChangeReport leg is live (Send Alexa Events permission
+// granted, AcceptGrant tokens stored in SSM, changeReport.mjs posting to the Event
+// Gateway via the apolloShadowChangeReport IoT Rule). If ChangeReports ever have to be
+// disabled (e.g. token loss), flip this back to false AND re-discover -- leaving it
+// true without working ChangeReports makes Alexa poll ReportState less and show staler
+// state.
+const CHANGE_REPORTS_ENABLED = true;
 
 /**
  * Whether Apollo publishes a live, shadow-backed canonical state for this endpoint.
