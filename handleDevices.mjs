@@ -1,6 +1,8 @@
 import { triggers, triggersMap } from './index.mjs';
 
 import { sendMessageToSQS } from './sendSQS.mjs';
+import { isStatefulTrigger } from './handleDiscovery.mjs';
+import { writeDesiredState, desiredStateFor } from './shadowCommands.mjs';
 
 /**
  * Handles Alexa smart home directives related to thermostat control.
@@ -287,6 +289,17 @@ async function handlePowerOrLight(event, context) {
         console.log(apiCommand);
 
         const response = await sendMessageToSQS(event, apiCommand, contextProperties);
+
+        // Stage 10 shadow-command dual-write (Apollo-Home-Control#23): only after the SQS
+        // send above has already succeeded, and only for endpoints Apollo publishes a live
+        // shadow for, mirror this directive's absolute target (if it has one -- see
+        // desiredStateFor's doc comment) onto the endpoint's IoT shadow `desired` node.
+        // writeDesiredState is a no-op unless SHADOW_COMMANDS=1, is bounded to +1.5s worst
+        // case, and never throws, so this can never turn a successful SQS dispatch into a
+        // failed or slower Alexa response.
+        if (isStatefulTrigger(trigger)) {
+            await writeDesiredState(applianceId, desiredStateFor(event.directive));
+        }
 
         return response;
     } else {
