@@ -70,7 +70,18 @@ const SHADES = {
     statefulMqtt: true
 };
 
-const FIXTURE_TRIGGERS = [LIGHT, SCENE, MACRO, SHADES, UNSTATEFUL_LIGHT];
+const AC = {
+    endpointId: 'livingRoomAC',
+    friendlyName: 'Living Room Air Conditioner',
+    displayCategories: ['AIR_CONDITIONER'],
+    apiModule: 'AC',
+    apiDevice: 'livingRoomAC',
+    isAC: true,
+    location: 'home',
+    mqttName: 'livingRoomAC'
+};
+
+const FIXTURE_TRIGGERS = [LIGHT, SCENE, MACRO, SHADES, UNSTATEFUL_LIGHT, AC];
 
 function endpointFor(response, endpointId) {
     return response.event.payload.endpoints.find((e) => e.endpointId === endpointId);
@@ -177,6 +188,32 @@ test('LIGHTS trigger WITHOUT statefulMqtt (e.g. a DMX light) gets no retrievable
 
     const health = capabilityFor(endpoint, 'Alexa.EndpointHealth');
     assert.equal(health, undefined, 'EndpointHealth should only be added for stateful endpoints');
+});
+
+test('AC: ThermostatController declares STATE PROPERTIES, not directive names, as supported', () => {
+    // Regression test: "supported" previously listed directive names
+    // (AdjustTargetTemperature, SetThermostatMode) instead of the property
+    // names Alexa's discovery validation requires (targetSetpoint,
+    // thermostatMode). The invalid shape caused Alexa to silently drop the
+    // whole ThermostatController interface, leaving the AC power-only in the
+    // Alexa app -- see handleDiscovery.mjs's isAC block for the full story.
+    const response = handleDiscovery(null, {}, FIXTURE_TRIGGERS);
+    const endpoint = endpointFor(response, 'livingRoomAC');
+
+    const thermostat = capabilityFor(endpoint, 'Alexa.ThermostatController');
+    assert.ok(thermostat, 'expected Alexa.ThermostatController interface to be present');
+
+    const supportedNames = thermostat.properties.supported.map((p) => p.name);
+    assert.deepEqual(supportedNames.sort(), ['targetSetpoint', 'thermostatMode']);
+
+    // Directive names must NOT appear as property names.
+    assert.ok(!supportedNames.includes('AdjustTargetTemperature'));
+    assert.ok(!supportedNames.includes('SetThermostatMode'));
+
+    assert.deepEqual(thermostat.configuration.supportedModes, ['COOL', 'ECO']);
+
+    const power = capabilityFor(endpoint, 'Alexa.PowerController');
+    assert.ok(power, 'AC should still get PowerController');
 });
 
 test('discovery response shape is otherwise unchanged (header/payload envelope)', () => {

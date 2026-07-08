@@ -140,9 +140,20 @@ function handleDiscovery(accessToken, context, triggersList = triggers) {
                     interface: 'Alexa.ThermostatController',
                     version: '3.2',
                     properties: {
+                        // "supported" must name STATE PROPERTIES the interface reports
+                        // (targetSetpoint, thermostatMode), not directive names -- Alexa
+                        // derives which directives it may send (SetTargetTemperature,
+                        // AdjustTargetTemperature, SetThermostatMode) from these property
+                        // names. The previous value ("AdjustTargetTemperature",
+                        // "SetThermostatMode") named directives instead of properties,
+                        // which fails Alexa's discovery validation for this interface --
+                        // Alexa silently drops ThermostatController and the Alexa app
+                        // shows the endpoint as power-only. handleAC (handleDevices.mjs)
+                        // already routes purely on directive name/namespace, independent
+                        // of this declaration, so no execution-side change is needed.
                         supported: [
-                            { name: 'AdjustTargetTemperature' },
-                            { name: 'SetThermostatMode' }
+                            { name: 'targetSetpoint' },
+                            { name: 'thermostatMode' }
                         ],
                         proactivelyReported: false,
                         retrievable: false
