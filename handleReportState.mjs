@@ -1,15 +1,6 @@
 import { triggersMap as liveTriggersMap } from './index.mjs';
 import { isStatefulTrigger } from './handleDiscovery.mjs';
-
-// How old (in seconds) a shadow's `timestamp` can be before we consider it stale and
-// report Alexa.EndpointHealth as UNREACHABLE even though `reachable` itself said true.
-// Matches the "timestamp older than 24h" staleness window called out in the Stage 7 spec.
-const STALE_SECONDS = 24 * 60 * 60;
-
-// Cap on uncertaintyInMilliseconds. There's no hard spec ceiling for this value; capping
-// it at the same 24h staleness window keeps it bounded and ties it to a concept the rest
-// of this file already reasons about, rather than introducing a second unrelated constant.
-const MAX_UNCERTAINTY_MS = STALE_SECONDS * 1000;
+import { isValidReportedState, buildProperties } from './alexaStateProperties.mjs';
 
 let cachedClient = null;
 
@@ -81,32 +72,6 @@ async function defaultGetShadow(endpointId) {
     return JSON.parse(raw);
 }
 
-/**
- * Whether `reported` has the field(s) this trigger type needs to build a valid
- * StateReport. Deliberately per-trigger-type rather than "has power AND position": the
- * shades canonical MQTT state never carries a `power` field (src/somfyBridge.js only ever
- * publishes `position`), so requiring `power` there would make every shades ReportState
- * "malformed". See handleDiscovery.mjs's reportsPower() for the discovery-side twin of
- * this same asymmetry.
- * @param {object} trigger
- * @param {object} reported
- * @returns {boolean}
- */
-function isValidReportedState(trigger, reported) {
-    if (!reported || typeof reported !== 'object') {
-        return false;
-    }
-    if (trigger.apiModule === 'LIGHTS') {
-        return reported.power === 'ON' || reported.power === 'OFF';
-    }
-    if (trigger.isPercentageController) {
-        return typeof reported.position === 'number' && reported.position >= 0 && reported.position <= 100;
-    }
-    // Any future STATEFUL_FLAG-only endpoint type has no known shape yet to validate --
-    // treat as malformed until this function is extended for it.
-    return false;
-}
-
 function buildErrorResponse(event, type, message) {
     const directive = event.directive;
     const endpointId = directive.endpoint && directive.endpoint.endpointId;
@@ -171,57 +136,7 @@ async function handleReportState(event, context, deps = {}) {
     }
 
     const nowMs = Date.now();
-    const timestampSeconds = typeof reported.timestamp === 'number' ? reported.timestamp : null;
-    const isStale = timestampSeconds === null || (Math.floor(nowMs / 1000) - timestampSeconds) > STALE_SECONDS;
-    const isUnreachable = reported.reachable === false || isStale;
-
-    const timeOfSample = timestampSeconds !== null
-        ? new Date(timestampSeconds * 1000).toISOString()
-        : new Date(nowMs).toISOString();
-
-    const uncertaintyInMilliseconds = timestampSeconds !== null
-        ? Math.min(Math.max(nowMs - timestampSeconds * 1000, 0), MAX_UNCERTAINTY_MS)
-        : MAX_UNCERTAINTY_MS;
-
-    const properties = [];
-
-    if (reported.power !== undefined) {
-        properties.push({
-            namespace: 'Alexa.PowerController',
-            name: 'powerState',
-            value: reported.power === 'ON' ? 'ON' : 'OFF',
-            timeOfSample,
-            uncertaintyInMilliseconds
-        });
-    }
-
-    if (trigger.isDimmable && reported.brightness !== undefined) {
-        properties.push({
-            namespace: 'Alexa.BrightnessController',
-            name: 'brightness',
-            value: reported.brightness,
-            timeOfSample,
-            uncertaintyInMilliseconds
-        });
-    }
-
-    if (trigger.isPercentageController && reported.position !== undefined) {
-        properties.push({
-            namespace: 'Alexa.PercentageController',
-            name: 'percentage',
-            value: reported.position,
-            timeOfSample,
-            uncertaintyInMilliseconds
-        });
-    }
-
-    properties.push({
-        namespace: 'Alexa.EndpointHealth',
-        name: 'connectivity',
-        value: { value: isUnreachable ? 'UNREACHABLE' : 'OK' },
-        timeOfSample,
-        uncertaintyInMilliseconds
-    });
+    const properties = buildProperties(trigger, reported, nowMs).map((entry) => entry.property);
 
     return {
         context: { properties },

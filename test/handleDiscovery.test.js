@@ -106,14 +106,13 @@ test('dimmable light: PowerController + BrightnessController retrievable, Endpoi
 
     const power = capabilityFor(endpoint, 'Alexa.PowerController');
     assert.equal(power.properties.retrievable, true);
-    // proactivelyReported stays false until the ChangeReport leg ships
-    // (CHANGE_REPORTS_ENABLED in handleDiscovery.mjs) -- claiming it early
-    // makes Alexa poll ReportState LESS and show staler state.
-    assert.equal(power.properties.proactivelyReported, false);
+    // proactivelyReported is live as of the ChangeReport leg
+    // (CHANGE_REPORTS_ENABLED in handleDiscovery.mjs).
+    assert.equal(power.properties.proactivelyReported, true);
 
     const brightness = capabilityFor(endpoint, 'Alexa.BrightnessController');
     assert.equal(brightness.properties.retrievable, true);
-    assert.equal(brightness.properties.proactivelyReported, false);
+    assert.equal(brightness.properties.proactivelyReported, true);
 
     const health = capabilityFor(endpoint, 'Alexa.EndpointHealth');
     assert.ok(health, 'expected Alexa.EndpointHealth interface to be present');
@@ -150,8 +149,8 @@ test('shades: PercentageController retrievable + EndpointHealth present, but Pow
 
     const percentage = capabilityFor(endpoint, 'Alexa.PercentageController');
     assert.equal(percentage.properties.retrievable, true);
-    // false until CHANGE_REPORTS_ENABLED flips (see comment on the kitchen test above)
-    assert.equal(percentage.properties.proactivelyReported, false);
+    // true as of the ChangeReport leg (see comment on the kitchen test above)
+    assert.equal(percentage.properties.proactivelyReported, true);
 
     // Apollo's shades driver never publishes a `power` field (src/somfyBridge.js), so
     // PowerController is intentionally NOT marked retrievable here even though the shades
